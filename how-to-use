@@ -1,0 +1,89 @@
+### Jak używać biblioteki **json_handler** w Hacker Lang (w kodzie .hacker)
+
+Twoja biblioteka `json_handler` (napisana w Rust) to samodzielny, skompilowany plik binarny, który możesz wywoływać z Hacker Lang dokładnie tak, jak każdy inny program w systemie.
+
+Oto pełna instrukcja, jak jej używać w praktyce:
+
+#### 1. Zainstaluj binarkę (jednorazowo)
+
+```bash
+bytes install json
+
+
+#### 2. Użycie w pliku `.hacker`
+
+```hacker
+// json        ! dodaj jako zależność systemową (opcjonalne, tylko informacja)
+# json
+
+@JSON_FILE=data.json
+@OUTPUT=/tmp/result.json
+
+! Przykład 1: Wypisz ładnie sformatowany JSON
+> json pretty data.json
+
+! Przykład 2: Wypisz ładnie JSON z pliku przez zmienną
+> json pretty $JSON_FILE
+
+! Przykład 3: Wczytaj JSON z stdin (np. z innego polecenia)
+> curl -s https://api.github.com/users/octocat | json pretty
+
+! Przykład 4: Pobierz konkretną wartość (ścieżka w stylu .key.subkey[0])
+> json get .name data.json
+> json get .owner.login data.json
+> json get .items[0].name repos.json
+
+! Przykład 5: Zapisz wynik do pliku (przekierowanie)
+> json pretty data.json > $OUTPUT
+> cat $OUTPUT
+
+! Przykład 6: Użyj w zmiennej (z backticks w Hacker Lang – jeśli masz wersję z obsługą)
+>> RESULT=$(json get .version package.json)
+>> echo "Wersja projektu: $RESULT"
+
+! Przykład 7: Sprawdź czy klucz istnieje i reaguj
+? json get .scripts.test package.json | grep -q "jest" > echo "Testy są skonfigurowane!"
+
+! Przykład 8: Pobierz tablicę i przetwórz każdy element (w pętli)
+=5 > echo "Element $I: $(json get .items[$I].name data.json)"
+```
+
+#### 3. Najczęściej używane ścieżki (przykłady)
+
+| Co chcesz wyciągnąć            | Ścieżka do json_handler get               |
+|--------------------------------|---------------------------------------------|
+| Najwyższy klucz                | `.nazwa_klucza`                             |
+| Zagnieżdżony klucz             | `.klucz.podsłowny`                          |
+| Element tablicy                | `.nazwa[0]`, `.items[5]`                    |
+| Zagnieżdżony + tablica         | `.owner.repos[0].name`                      |
+| Cały obiekt jako JSON          | `.` (kropka)                                |
+
+#### 4. Gotowy przykładowy plik `json_demo.hacker`
+
+```hacker
+// json_handler
+
+@FILE=package.json
+
+> echo "=== Zawartość package.json (pretty) ==="
+> json pretty $FILE
+
+> echo -e "\n=== Nazwa projektu ==="
+> json get .name $FILE
+
+> echo -e "\n=== Wersja ==="
+> json get .version $FILE
+
+> echo -e "\n=== Wszystkie zależności ==="
+> json get .dependencies $FILE | json_handler pretty
+
+> echo -e "\n=== Pierwsza zależność (nazwa) ==="
+> json get '.dependencies | to_entries[0].key' $FILE
+```
+
+#### 5. Bonus: Użycie z `curl` (API)
+
+```hacker
+> curl -s https://api.ipify.org?format=json | json_handler get .ip > my_ip.txt
+> echo "Twoje publiczne IP: $(cat my_ip.txt)"
+```
